@@ -1,0 +1,10 @@
+import { useEffect, useState, type FormEvent } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { LockKeyhole } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+
+export const Route = createFileRoute("/reset-password")({ head: () => ({ meta: [{ title: "Reset password — NoCode Folio" }, { name: "description", content: "Set a new password for your NoCode Folio account." }, { property: "og:title", content: "Reset password — NoCode Folio" }, { property: "og:description", content: "Set a new password for your NoCode Folio account." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: ResetPassword });
+function ResetPassword() { const navigate = useNavigate(); const [password, setPassword] = useState(""); const [ready, setReady] = useState(false); useEffect(() => { setReady(window.location.hash.includes("type=recovery") || window.location.search.includes("type=recovery")); }, []); async function submit(event: FormEvent) { event.preventDefault(); const { error } = await supabase.auth.updateUser({ password }); if (error) return toast.error(error.message); toast.success("Password updated"); await navigate({ to: "/auth" }); } return <main className="auth-page"><section className="auth-card"><div className="brand-mark"><LockKeyhole /></div><h1 className="mt-6 text-3xl font-bold">Choose a new password</h1>{ready ? <form onSubmit={submit} className="mt-8 grid gap-4"><Input type="password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="New password" required className="h-12 rounded-xl" /><Button className="h-12 rounded-xl">Update password</Button></form> : <p className="mt-4 text-muted-foreground">Open the recovery link from your email to continue.</p>}</section></main>; }
