@@ -54,9 +54,9 @@ export function FolioGrid({ profile, initialWidgets, canEdit = false }: Props) {
   }
 
   async function remove(widget: WidgetRow) {
-    if (widget.type === "profile") return toast.error("Your profile block can’t be deleted");
+    if (widget.type === "profile") { toast.error("Your profile block can’t be deleted"); return; }
     const { error } = await supabase.from("widgets").delete().eq("id", widget.id);
-    if (error) return toast.error("Couldn’t delete this block");
+    if (error) { toast.error("Couldn’t delete this block"); return; }
     await persistOrder(widgets.filter((item) => item.id !== widget.id));
     toast.success("Block removed");
   }
@@ -131,10 +131,10 @@ function WidgetView({ widget, profile, editing }: { widget: WidgetRow; profile: 
     return <div className="flex h-full flex-col justify-between p-7 md:p-8">
       <div className="flex items-start justify-between gap-4">
         <img src={avatar || `https://api.dicebear.com/9.x/shapes/svg?seed=${profile.username}`} alt={`${profile.full_name} avatar`} width={112} height={112} className="h-24 w-24 rounded-[30%] object-cover ring-1 ring-border md:h-28 md:w-28" />
-        <span className="status-pill"><span />{String(content.availability || "Available")}</span>
+        <span className="status-pill"><span />{String(content["availability"] || "Available")}</span>
       </div>
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase text-primary">{String(content.eyebrow || "Creator")}</p>
+        <p className="mb-2 text-xs font-semibold uppercase text-primary">{String(content["eyebrow"] || "Creator")}</p>
         <h1 className="text-3xl font-bold text-foreground md:text-4xl">{profile.full_name}</h1>
         <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground md:text-base">{profile.bio}</p>
         <div className="mt-5 flex flex-wrap gap-2">{profile.skills.map((skill) => <span className="skill-pill" key={skill}>{skill}</span>)}</div>
@@ -142,17 +142,17 @@ function WidgetView({ widget, profile, editing }: { widget: WidgetRow; profile: 
     </div>;
   }
   if (widget.type === "social") {
-    const Icon = socialIcons[String(content.platform || "x").toLowerCase() as keyof typeof socialIcons] ?? AtSign;
-    const inner = <div className="flex h-full flex-col items-center justify-center gap-4 p-6"><Icon className="h-12 w-12 text-primary" strokeWidth={1.5} /><div className="text-center"><p className="font-semibold text-foreground">{String(content.label || content.platform || "Social")}</p><p className="mt-1 text-xs text-muted-foreground">Connect with me</p></div><ExternalLink className="absolute right-5 top-5 h-4 w-4 text-muted-foreground" /></div>;
-    return editing ? inner : <a className="absolute inset-0" href={String(content.url || "#")} target="_blank" rel="noreferrer" aria-label={`Open ${String(content.label || "social link")}`}>{inner}</a>;
+    const Icon = socialIcons[String(content["platform"] || "x").toLowerCase() as keyof typeof socialIcons] ?? AtSign;
+    const inner = <div className="flex h-full flex-col items-center justify-center gap-4 p-6"><Icon className="h-12 w-12 text-primary" strokeWidth={1.5} /><div className="text-center"><p className="font-semibold text-foreground">{String(content["label"] || content["platform"] || "Social")}</p><p className="mt-1 text-xs text-muted-foreground">Connect with me</p></div><ExternalLink className="absolute right-5 top-5 h-4 w-4 text-muted-foreground" /></div>;
+    return editing ? inner : <a className="absolute inset-0" href={String(content["url"] || "#")} target="_blank" rel="noreferrer" aria-label={`Open ${String(content["label"] || "social link")}`}>{inner}</a>;
   }
   if (widget.type === "showcase") {
-    const image = profile.username === "maya" ? demoShowcase : String(content.image_url || demoShowcase);
-    const inner = <><img src={image} alt="" width={1536} height={864} loading="lazy" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" /><div className="absolute inset-x-0 bottom-0 z-10 p-6"><p className="text-xl font-bold text-foreground">{String(content.title || "Featured work")}</p><p className="mt-1 text-sm text-muted-foreground">{String(content.subtitle || "View project")}</p></div></>;
-    return editing ? inner : <a className="absolute inset-0" href={String(content.url || "#")} target="_blank" rel="noreferrer" aria-label={`Open ${String(content.title || "showcase")}`}>{inner}</a>;
+    const image = profile.username === "maya" ? demoShowcase : String(content["image_url"] || demoShowcase);
+    const inner = <><img src={image} alt="" width={1536} height={864} loading="lazy" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" /><div className="absolute inset-x-0 bottom-0 z-10 p-6"><p className="text-xl font-bold text-foreground">{String(content["title"] || "Featured work")}</p><p className="mt-1 text-sm text-muted-foreground">{String(content["subtitle"] || "View project")}</p></div></>;
+    return editing ? inner : <a className="absolute inset-0" href={String(content["url"] || "#")} target="_blank" rel="noreferrer" aria-label={`Open ${String(content["title"] || "showcase")}`}>{inner}</a>;
   }
   if (widget.type === "newsletter") return <Newsletter profileId={profile.id} content={content} disabled={editing} />;
-  return <div className="relative h-full overflow-hidden p-6"><MapArtwork /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background p-6 pt-12"><p className="text-xs font-semibold uppercase text-primary">{String(content.label || "Working from")}</p><p className="mt-1 font-bold text-foreground">{String(content.city || "Somewhere great")}</p></div></div>;
+  return <div className="relative h-full overflow-hidden p-6"><MapArtwork /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background p-6 pt-12"><p className="text-xs font-semibold uppercase text-primary">{String(content["label"] || "Working from")}</p><p className="mt-1 font-bold text-foreground">{String(content["city"] || "Somewhere great")}</p></div></div>;
 }
 
 function Newsletter({ profileId, content, disabled }: { profileId: string; content: WidgetContent; disabled: boolean }) {
@@ -161,22 +161,22 @@ function Newsletter({ profileId, content, disabled }: { profileId: string; conte
   async function submit(event: FormEvent) {
     event.preventDefault();
     const parsed = z.string().email().safeParse(email);
-    if (!parsed.success) return toast.error("Enter a valid email address");
+    if (!parsed.success) { toast.error("Enter a valid email address"); return; }
     setSaving(true);
     const { error } = await supabase.from("subscribers").insert({ profile_id: profileId, email: parsed.data.toLowerCase() });
     setSaving(false);
-    if (error?.code === "23505") return toast.info("You’re already on the list");
-    if (error) return toast.error("Couldn’t subscribe right now");
+    if (error?.code === "23505") { toast.info("You’re already on the list"); return; }
+    if (error) { toast.error("Couldn’t subscribe right now"); return; }
     setEmail(""); toast.success("You’re on the list!");
   }
-  return <div className="flex h-full flex-col justify-center p-6 md:p-8"><Mail className="mb-4 h-7 w-7 text-primary" /><h2 className="max-w-lg text-xl font-bold text-foreground md:text-2xl">{String(content.headline || "Stay in the loop")}</h2><p className="mt-2 text-sm text-muted-foreground">{String(content.description || "Occasional notes, always useful.")}</p><form onSubmit={submit} className="mt-5 flex gap-2"><Input aria-label="Email address" type="email" placeholder="you@email.com" value={email} onChange={(event) => setEmail(event.target.value)} disabled={disabled} className="h-11 rounded-xl bg-input/50" /><Button disabled={saving || disabled} className="h-11 rounded-xl">{saving ? "Joining…" : "Subscribe"}</Button></form></div>;
+  return <div className="flex h-full flex-col justify-center p-6 md:p-8"><Mail className="mb-4 h-7 w-7 text-primary" /><h2 className="max-w-lg text-xl font-bold text-foreground md:text-2xl">{String(content["headline"] || "Stay in the loop")}</h2><p className="mt-2 text-sm text-muted-foreground">{String(content["description"] || "Occasional notes, always useful.")}</p><form onSubmit={submit} className="mt-5 flex gap-2"><Input aria-label="Email address" type="email" placeholder="you@email.com" value={email} onChange={(event) => setEmail(event.target.value)} disabled={disabled} className="h-11 rounded-xl bg-input/50" /><Button disabled={saving || disabled} className="h-11 rounded-xl">{saving ? "Joining…" : "Subscribe"}</Button></form></div>;
 }
 
 function MapArtwork() {
   return <div className="map-art" aria-hidden="true"><span className="road road-a" /><span className="road road-b" /><span className="road road-c" /><span className="road road-d" /><span className="map-pin"><MapPin /></span></div>;
 }
 
-function BlockDialog({ open, mode, widget, profile, onOpenChange, onSaved }: { open: boolean; mode: "add" | "edit"; widget?: WidgetRow; profile: Profile; onOpenChange: (open: boolean) => void; onSaved: (widget: WidgetRow) => void }) {
+function BlockDialog({ open, mode, widget, profile, onOpenChange, onSaved }: { open: boolean; mode: "add" | "edit"; widget: WidgetRow | undefined; profile: Profile; onOpenChange: (open: boolean) => void; onSaved: (widget: WidgetRow) => void }) {
   const initial = useMemo(() => widgetContent(widget?.content ?? {}), [widget]);
   const [type, setType] = useState<WidgetType>(widget?.type ?? "social");
   const [size, setSize] = useState<WidgetSize>(widget?.size ?? "1x1");
@@ -188,11 +188,11 @@ function BlockDialog({ open, mode, widget, profile, onOpenChange, onSaved }: { o
     event.preventDefault(); setSaving(true);
     if (widget) {
       const { data, error } = await supabase.from("widgets").update({ type, size, content }).eq("id", widget.id).select().single();
-      setSaving(false); if (error) return toast.error("Couldn’t save this block"); onSaved(data); toast.success("Block updated");
+      setSaving(false); if (error) { toast.error("Couldn’t save this block"); return; } onSaved(data); toast.success("Block updated");
     } else {
       const { count } = await supabase.from("widgets").select("id", { count: "exact", head: true }).eq("profile_id", profile.id);
       const { data, error } = await supabase.from("widgets").insert({ profile_id: profile.id, type, size, content, position_index: count ?? 0 }).select().single();
-      setSaving(false); if (error) return toast.error("Couldn’t add this block"); onSaved(data); toast.success("Block added");
+      setSaving(false); if (error) { toast.error("Couldn’t add this block"); return; } onSaved(data); toast.success("Block added");
     }
     onOpenChange(false);
   }

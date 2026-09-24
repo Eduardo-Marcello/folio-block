@@ -24,15 +24,15 @@ function Onboarding() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
-  const [fullName, setFullName] = useState(String(user.user_metadata?.full_name ?? ""));
+  const [fullName, setFullName] = useState(String(user.user_metadata?.["full_name"] ?? ""));
   const [saving, setSaving] = useState(false);
   async function submit(event: FormEvent) {
     event.preventDefault();
     const parsed = z.string().regex(/^[a-z0-9_]{3,24}$/).safeParse(username);
-    if (!parsed.success) return toast.error("Use 3–24 lowercase letters, numbers, or underscores");
+    if (!parsed.success) { toast.error("Use 3–24 lowercase letters, numbers, or underscores"); return; }
     setSaving(true);
     const { data: existing } = await supabase.from("profiles").select("id").eq("username", parsed.data).maybeSingle();
-    if (existing) { setSaving(false); return toast.error("That username is already taken"); }
+    if (existing) { setSaving(false); toast.error("That username is already taken"); return; }
     try {
       await createStarterProfile(user.id, parsed.data, fullName.trim() || "New creator");
       toast.success("Your folio is ready");
