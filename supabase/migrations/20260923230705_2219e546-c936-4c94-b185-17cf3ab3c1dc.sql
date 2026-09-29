@@ -1,4 +1,0 @@
-CREATE POLICY "Public can view folio images" ON storage.objects FOR SELECT TO anon, authenticated USING (bucket_id = 'images');
-CREATE POLICY "Users upload their own folio images" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'images' AND (storage.foldername(name))[1] = auth.uid()::text);
-CREATE POLICY "Users update their own folio images" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'images' AND (storage.foldername(name))[1] = auth.uid()::text) WITH CHECK (bucket_id = 'images' AND (storage.foldername(name))[1] = auth.uid()::text);
-CREATE POLICY "Users delete their own folio images" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'images' AND (storage.foldername(name))[1] = auth.uid()::text);
