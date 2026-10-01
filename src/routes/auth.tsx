@@ -1,35 +1,216 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Blocks, Mail, Sparkles } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
+import { ArrowRight, Blocks, Loader2, MailCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { buscarMeuPerfil } from "@/lib/folio-api";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [
-    { title: "Sign in — NoCode Folio" },
-    { name: "description", content: "Create or manage your modular NoCode Folio profile." },
-    { property: "og:title", content: "Sign in — NoCode Folio" },
-    { property: "og:description", content: "Create or manage your modular NoCode Folio profile." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary_large_image" },
-  ] }), component: AuthPage,
+  ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Entrar — NoCode Folio" },
+      { name: "description", content: "Crie ou gerencie sua página NoCode Folio." },
+      { property: "og:title", content: "Entrar — NoCode Folio" },
+      { property: "og:description", content: "Crie ou gerencie sua página NoCode Folio." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: AuthPage,
 });
 
+const CHAVE_ULTIMO_EMAIL = "folio:ultimo-email";
+
 function AuthPage() {
-  const navigate = useNavigate(); const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
-  const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [fullName, setFullName] = useState(""); const [saving, setSaving] = useState(false);
-  useEffect(() => { supabase.auth.getUser().then(({ data }) => { if (data.user) void goNext(data.user.id); }); }, []);
-  async function goNext(id: string) { const { data } = await supabase.from("profiles").select("username").eq("id", id).maybeSingle(); if (data) await navigate({ to: "/$username", params: { username: data.username } }); else await navigate({ to: "/onboarding" }); }
-  async function submit(event: FormEvent) {
-    event.preventDefault(); setSaving(true);
-    if (mode === "forgot") { const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` }); setSaving(false); if (error) { toast.error(error.message); return; } toast.success("Check your email for a reset link"); return; }
-    if (mode === "signup") {
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin, data: { full_name: fullName } } }); setSaving(false);
-      if (error) { toast.error(error.message); return; } if (!data.session) { toast.success("Check your email to confirm your account"); return; } if (data.user) await goNext(data.user.id); return;
+  const navigate = useNavigate();
+  // Lembra o último e-mail usado (só conveniência; nada sensível além do próprio e-mail).
+  const [email, setEmail] = useState(() => {
+    try {
+      return window.localStorage.getItem(CHAVE_ULTIMO_EMAIL) ?? "";
+    } catch {
+      return "";
     }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password }); setSaving(false); if (error) { toast.error("Email or password is incorrect"); return; } await goNext(data.user.id);
+  });
+  const [enviando, setEnviando] = useState(false);
+  const [enviadoPara, setEnviadoPara] = useState<string | null>(null);
+  const [entrando, setEntrando] = useState(
+    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("code"),
+  );
+  const redirecionou = useRef(false);
+
+  useEffect(() => {
+    async function seguir(user: User) {
+      if (redirecionou.current) return;
+      redirecionou.current = true;
+      setEntrando(true);
+      try {
+        const perfil = await buscarMeuPerfil(user.id);
+        if (!perfil || user.user_metadata?.["onboarding_concluido"] !== true)
+          await navigate({ to: "/onboarding", replace: true });
+        else await navigate({ to: "/$slug", params: { slug: perfil.slug }, replace: true });
+      } catch {
+        redirecionou.current = false;
+        setEntrando(false);
+        toast.error("Não foi possível carregar seu perfil");
+      }
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const erroUrl = params.get("error_description");
+    if (erroUrl) toast.error(erroUrl);
+
+    // getSession aguarda a troca do `?code=` (PKCE) pela sessão, quando vier do Magic Link/Google.
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) void seguir(data.session.user);
+      else setEntrando(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((evento, session) => {
+      if (evento === "SIGNED_IN" && session) void seguir(session.user);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, [navigate]);
+
+  const redirectTo = () => `${window.location.origin}/auth`;
+
+  async function enviarMagicLink(event: FormEvent) {
+    event.preventDefault();
+    const parsed = z.string().trim().toLowerCase().email().safeParse(email);
+    if (!parsed.success) {
+      toast.error("Digite um e-mail válido");
+      return;
+    }
+    setEnviando(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: parsed.data,
+      options: { emailRedirectTo: redirectTo() },
+    });
+    setEnviando(false);
+    if (error) {
+      toast.error(
+        error.status === 429
+          ? "Muitas tentativas. Aguarde um pouco e tente de novo."
+          : "Não foi possível enviar o link",
+      );
+      return;
+    }
+    try {
+      window.localStorage.setItem(CHAVE_ULTIMO_EMAIL, parsed.data);
+    } catch {
+      // localStorage indisponível (aba anônima/bloqueado): só não lembra o e-mail.
+    }
+    setEnviadoPara(parsed.data);
   }
-  return <main className="auth-page"><section className="auth-card"><a href="/" className="mb-10 flex items-center gap-2 font-bold"><span className="brand-mark small"><Blocks /></span>NoCode Folio</a><p className="eyebrow">{mode === "signup" ? "Start creating" : mode === "forgot" ? "Password recovery" : "Welcome back"}</p><h1 className="mt-3 text-3xl font-bold">{mode === "signup" ? "Build your folio" : mode === "forgot" ? "Reset your password" : "Your work, your way"}</h1><p className="mt-3 text-muted-foreground">{mode === "forgot" ? "We’ll send a secure reset link to your inbox." : "A flexible home for everything you make."}</p><form onSubmit={submit} className="mt-8 grid gap-4">{mode === "signup" && <Input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Full name" required className="h-12 rounded-xl" />}<Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email address" required className="h-12 rounded-xl" />{mode !== "forgot" && <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} placeholder="Password" required className="h-12 rounded-xl" />}<Button disabled={saving} className="h-12 rounded-xl">{saving ? "Please wait…" : <>{mode === "signup" ? "Create account" : mode === "forgot" ? "Send reset link" : "Sign in"}<ArrowRight /></>}</Button></form>{mode === "login" && <button className="mt-4 text-sm text-muted-foreground hover:text-foreground" onClick={() => setMode("forgot")}>Forgot password?</button>}<div className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">{mode === "signup" ? "Already have a folio? " : "New here? "}<button className="font-semibold text-primary" onClick={() => setMode(mode === "signup" ? "login" : "signup")}>{mode === "signup" ? "Sign in" : "Create an account"}</button></div>{mode === "forgot" && <button className="mt-5 flex items-center gap-2 text-sm text-primary" onClick={() => setMode("login")}><Mail />Back to sign in</button>}</section><div className="auth-aside" aria-hidden="true"><Sparkles /><p>Arrange your internet<br />like it belongs to you.</p></div></main>;
+
+  async function entrarComGoogle() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: redirectTo() },
+    });
+    if (error) toast.error("Login com Google indisponível no momento");
+  }
+
+  return (
+    <main className="auth-page">
+      <section className="auth-card">
+        <a href="/" className="mb-10 flex items-center gap-2 font-bold">
+          <span className="brand-mark small">
+            <Blocks />
+          </span>
+          NoCode Folio
+        </a>
+
+        {entrando ? (
+          <div className="flex flex-col items-center gap-4 py-10 text-center text-slate-400">
+            <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
+            Entrando…
+          </div>
+        ) : enviadoPara ? (
+          <div className="text-center">
+            <MailCheck className="mx-auto h-12 w-12 text-violet-400" />
+            <h1 className="mt-5 text-2xl font-bold">Confira seu e-mail</h1>
+            <p className="mt-3 text-slate-400">
+              Enviamos um link de acesso para{" "}
+              <strong className="text-slate-200">{enviadoPara}</strong>. Abra-o neste mesmo
+              navegador.
+            </p>
+            <Button variant="ghost" className="mt-6" onClick={() => setEnviadoPara(null)}>
+              Usar outro e-mail
+            </Button>
+          </div>
+        ) : (
+          <>
+            <p className="eyebrow">Bem-vindo</p>
+            <h1 className="mt-3 text-3xl font-bold">Entre ou crie sua página</h1>
+            <p className="mt-3 text-slate-400">
+              Sem senha: enviamos um link mágico para o seu e-mail.
+            </p>
+            <form onSubmit={(event) => void enviarMagicLink(event)} className="mt-8 grid gap-4">
+              <Input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="seu@email.com"
+                required
+                className="h-12 rounded-xl"
+              />
+              <Button
+                type="submit"
+                variant="gradient"
+                disabled={enviando}
+                className="h-12 rounded-xl"
+              >
+                {enviando ? (
+                  "Enviando…"
+                ) : (
+                  <>
+                    Enviar Magic Link
+                    <ArrowRight />
+                  </>
+                )}
+              </Button>
+            </form>
+            <div className="my-6 flex items-center gap-3 text-xs text-slate-500">
+              <span className="h-px flex-1 bg-slate-800" />
+              ou
+              <span className="h-px flex-1 bg-slate-800" />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 w-full rounded-xl"
+              onClick={() => void entrarComGoogle()}
+            >
+              <GoogleIcon />
+              Continuar com Google
+            </Button>
+          </>
+        )}
+      </section>
+      <div className="auth-aside" aria-hidden="true">
+        <Sparkles />
+        <p>
+          Sua internet,
+          <br />
+          organizada em blocos.
+        </p>
+      </div>
+    </main>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#EA4335"
+        d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.5 14.6 2.5 12 2.5 6.8 2.5 2.6 6.7 2.6 12s4.2 9.5 9.4 9.5c5.4 0 9-3.8 9-9.2 0-.6-.1-1.1-.2-1.6H12z"
+      />
+    </svg>
+  );
 }

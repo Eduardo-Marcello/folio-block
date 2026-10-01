@@ -1,261 +1,254 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
+    PostgrestVersion: "14.18";
+  };
   public: {
     Tables: {
-      profiles: {
+      blocos: {
         Row: {
-          avatar_url: string | null
-          bio: string
-          created_at: string
-          full_name: string
-          id: string
-          skills: string[]
-          updated_at: string
-          username: string
-        }
+          colunas: number;
+          conteudo: Json;
+          created_at: string;
+          id: number;
+          linhas: number;
+          ordem: number;
+          perfil_id: number;
+          tipo: string;
+          titulo: string | null;
+          visivel: boolean;
+        };
         Insert: {
-          avatar_url?: string | null
-          bio?: string
-          created_at?: string
-          full_name?: string
-          id: string
-          skills?: string[]
-          updated_at?: string
-          username: string
-        }
+          colunas?: number;
+          conteudo?: Json;
+          created_at?: string;
+          id?: number;
+          linhas?: number;
+          ordem?: number;
+          perfil_id: number;
+          tipo: string;
+          titulo?: string | null;
+          visivel?: boolean;
+        };
         Update: {
-          avatar_url?: string | null
-          bio?: string
-          created_at?: string
-          full_name?: string
-          id?: string
-          skills?: string[]
-          updated_at?: string
-          username?: string
-        }
-        Relationships: []
-      }
-      subscribers: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          profile_id: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          profile_id: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          profile_id?: string
-        }
+          colunas?: number;
+          conteudo?: Json;
+          created_at?: string;
+          id?: number;
+          linhas?: number;
+          ordem?: number;
+          perfil_id?: number;
+          tipo?: string;
+          titulo?: string | null;
+          visivel?: boolean;
+        };
         Relationships: [
           {
-            foreignKeyName: "subscribers_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            foreignKeyName: "blocos_perfil_id_fkey";
+            columns: ["perfil_id"];
+            isOneToOne: false;
+            referencedRelation: "perfis";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-      widgets: {
+        ];
+      };
+      leads: {
         Row: {
-          content: Json
-          created_at: string
-          id: string
-          position_index: number
-          profile_id: string
-          size: Database["public"]["Enums"]["widget_size"]
-          type: Database["public"]["Enums"]["widget_type"]
-          updated_at: string
-        }
+          created_at: string;
+          email: string;
+          id: number;
+          perfil_id: number;
+        };
         Insert: {
-          content?: Json
-          created_at?: string
-          id?: string
-          position_index?: number
-          profile_id: string
-          size: Database["public"]["Enums"]["widget_size"]
-          type: Database["public"]["Enums"]["widget_type"]
-          updated_at?: string
-        }
+          created_at?: string;
+          email: string;
+          id?: number;
+          perfil_id: number;
+        };
         Update: {
-          content?: Json
-          created_at?: string
-          id?: string
-          position_index?: number
-          profile_id?: string
-          size?: Database["public"]["Enums"]["widget_size"]
-          type?: Database["public"]["Enums"]["widget_type"]
-          updated_at?: string
-        }
+          created_at?: string;
+          email?: string;
+          id?: number;
+          perfil_id?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "widgets_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            foreignKeyName: "leads_perfil_id_fkey";
+            columns: ["perfil_id"];
+            isOneToOne: false;
+            referencedRelation: "perfis";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-    }
+        ];
+      };
+      perfis: {
+        Row: {
+          avatar_url: string | null;
+          bio: string;
+          configuracao_tema: Json;
+          created_at: string;
+          id: number;
+          nome_completo: string;
+          slug: string;
+          usuario_id: string;
+        };
+        Insert: {
+          avatar_url?: string | null;
+          bio?: string;
+          configuracao_tema?: Json;
+          created_at?: string;
+          id?: number;
+          nome_completo?: string;
+          slug: string;
+          usuario_id: string;
+        };
+        Update: {
+          avatar_url?: string | null;
+          bio?: string;
+          configuracao_tema?: Json;
+          created_at?: string;
+          id?: number;
+          nome_completo?: string;
+          slug?: string;
+          usuario_id?: string;
+        };
+        Relationships: [];
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Functions: {
-      [_ in never]: never
-    }
+      reordenar_blocos: {
+        Args: { p_ids: number[]; p_perfil_id: number };
+        Returns: undefined;
+      };
+    };
     Enums: {
-      widget_size: "1x1" | "2x1" | "2x2"
-      widget_type: "profile" | "social" | "showcase" | "newsletter" | "map"
-    }
+      [_ in never]: never;
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+      [_ in never]: never;
+    };
+  };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+      Row: infer R;
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
       }
       ? R
       : never
-    : never
+    : never;
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+      Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
+        Insert: infer I;
       }
       ? I
       : never
-    : never
+    : never;
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+      Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+        Update: infer U;
       }
       ? U
       : never
-    : never
+    : never;
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+    : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+    : never;
 
 export const Constants = {
   public: {
-    Enums: {
-      widget_size: ["1x1", "2x1", "2x2"],
-      widget_type: ["profile", "social", "showcase", "newsletter", "map"],
-    },
+    Enums: {},
   },
-} as const
+} as const;
