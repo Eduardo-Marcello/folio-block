@@ -15,9 +15,9 @@
 - [x] Testar login → onboarding no navegador (usuário criado, perfil `marcellopsilva999`, bloco inicial)
 - [x] Tela de login lembra o último e-mail usado (localStorage)
 - [x] Commit `642ae99` na branch `plan`
-- [x] Login trocado para usuário + e-mail + senha (com confirmação de senha, código de 6 dígitos no e-mail e "esqueci minha senha") em `src/routes/auth.tsx`
+- [x] Login trocado para usuário + e-mail + senha (com confirmação de senha e "esqueci minha senha") em `src/routes/auth.tsx`; sem confirmação por e-mail e sem botão do Google
 - [ ] Rodar `database/migracoes/2026-10-06-cadastro-usuario-senha.sql` no SQL Editor (o trigger passa a usar o nome de usuário como slug)
-- [ ] Supabase → Auth → Email Templates → "Confirm signup": incluir `{{ .Token }}` para o código de 6 dígitos chegar no e-mail
+- [ ] Supabase → Authentication → Sign In / Providers → Email: desligar **Confirm email** (o cadastro entra direto)
 - [ ] Supabase → Auth → URL Configuration: adicionar `http://localhost:8080/auth?tipo=recuperar` (ou `http://localhost:8080/**`) às Redirect URLs
 - [ ] Testar o restante no navegador: editar grid (adicionar/arrastar/redimensionar/ocultar/excluir blocos), editar perfil, visão de visitante (aba anônima), inscrição na newsletter
 - [ ] Push da branch `plan` e PR para `main` (não fazer force push: o projeto é sincronizado com o Lovable)
