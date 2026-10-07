@@ -1,6 +1,6 @@
 # Progresso da implementação do PRD (NoCode Folio)
 
-Última atualização: 2026-09-30. Branch: `plan` (nada commitado ainda).
+Última atualização: 2026-09-30. Branch: `plan` (commit `642ae99`, **sem push**).
 
 ## Status
 
@@ -11,14 +11,29 @@
 - [x] Aplicar `database/schema.sql` no projeto `nlpkjafpasxcyxttvphw` (migrations `schema_inicial_folio` + `grants_minimos`)
 - [x] Verificar tabelas/RLS/trigger/bucket e rodar os security advisors (0 alertas; trigger e RLS testados em transação com rollback)
 - [x] Regenerar `src/integrations/supabase/types.ts` (já batia com o banco; só mudou a versão do PostgREST)
-- [ ] Painel Supabase: adicionar `http://localhost:8080/auth` (porta do dev) em Auth → URL Configuration → Redirect URLs
-- [ ] Painel Supabase: habilitar o provider Google (hoje desligado; Magic Link já funciona)
-- [ ] Testar fluxo completo no navegador: login → onboarding → editar grid → visitante
-- [ ] Commit (não fazer force push: o projeto é sincronizado com o Lovable)
+- [x] Painel Supabase: Redirect URL `http://localhost:8080/auth` (Magic Link funcionando)
+- [x] Testar login → onboarding no navegador (usuário criado, perfil `marcellopsilva999`, bloco inicial)
+- [x] Tela de login lembra o último e-mail usado (localStorage)
+- [x] Commit `642ae99` na branch `plan`
+- [x] Login trocado para usuário + e-mail + senha (com confirmação de senha, código de 6 dígitos no e-mail e "esqueci minha senha") em `src/routes/auth.tsx`
+- [ ] Rodar `database/migracoes/2026-10-06-cadastro-usuario-senha.sql` no SQL Editor (o trigger passa a usar o nome de usuário como slug)
+- [ ] Supabase → Auth → Email Templates → "Confirm signup": incluir `{{ .Token }}` para o código de 6 dígitos chegar no e-mail
+- [ ] Supabase → Auth → URL Configuration: adicionar `http://localhost:8080/auth?tipo=recuperar` (ou `http://localhost:8080/**`) às Redirect URLs
+- [ ] Testar o restante no navegador: editar grid (adicionar/arrastar/redimensionar/ocultar/excluir blocos), editar perfil, visão de visitante (aba anônima), inscrição na newsletter
+- [ ] Push da branch `plan` e PR para `main` (não fazer force push: o projeto é sincronizado com o Lovable)
+- [ ] Login com Google: criar o OAuth Client ID no Google Cloud (Aplicativo da Web; origem `http://localhost:8080`; redirect `https://nlpkjafpasxcyxttvphw.supabase.co/auth/v1/callback`) e colar o Client ID e o Client Secret em Supabase → Auth → Providers → Google
+- [ ] (Opcional) Código OTP de 6 dígitos no e-mail como alternativa ao clique no link (editar o template no Supabase e adicionar o campo de código em `auth.tsx`)
+- [ ] Produção: adicionar o domínio real nas Redirect URLs do Supabase (e no Google, se estiver ativo)
 
 ## Próximo passo (para o Claude)
 
-> Banco aplicado e verificado. Faltam os ajustes no painel do Supabase (feitos pelo usuário), o teste no navegador e o commit.
+> Já estão aplicados e commitados: banco, frontend e login por Magic Link. Próximos passos: terminar o teste do grid e da visão de visitante, fazer o push e abrir um PR para `main`. O Google fica para quando o usuário criar o Client ID.
+
+## Notas
+
+- Depois de sair (logout), o Magic Link pede o link no e-mail de novo: isso é esperado (não há senha). Se o usuário não sair, a sessão continua salva.
+- A identidade do git foi configurada **só neste repositório** como `Eduardo-Marcello <Eduardo-Marcello@users.noreply.github.com>`.
+- `.cursor/settings.json` fica fora dos commits (é configuração pessoal do editor).
 
 ## Contexto importante
 
